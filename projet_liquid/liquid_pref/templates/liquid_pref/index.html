@@ -3,6 +3,7 @@
     <head>
         <script src="https://cdn.jsdelivr.net/npm/handsontable@9.0/dist/handsontable.full.min.js"></script>
         <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@9.0/dist/handsontable.full.min.css" /> 
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
         <script type="module">
 
             const container_shares = document.getElementById('shares_input');
@@ -10,6 +11,9 @@
             const container_shares_prices = document.getElementById('shares_price');
             const container_options_prices = document.getElementById('options_price');
             const save = document.querySelector('#save');
+
+            var cap_table;
+            var liquid_pref;
 
             const data_shares = [
             ['', 'Common shares', 'A shares', 'B shares', 'C shares'],
@@ -30,7 +34,7 @@
             ];
 
             const data_shares_prices = [
-            ['', 'Common shares', 'A shares', 'B shares', 'C shares'],
+            ['', 'Nominal', 'A shares', 'B shares', 'C shares'],
             ['Share price', 0, 0, 0, 0]
             ];
 
@@ -89,7 +93,6 @@
 
             function ajax(url, method, params, callback) {
                 let obj;
-
                 try {
                     obj = new XMLHttpRequest();
                 } catch (e) {
@@ -113,12 +116,8 @@
                 obj.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
                 obj.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
                 obj.send(params);
-
                 return obj;
                 }
-
-            var cap_table;
-            var liquid_pref;
 
             Handsontable.dom.addEvent(save, 'click', () => {
             // save all cell's data
@@ -129,23 +128,20 @@
             });
 
             function display() {
-                fetch('/liquid_pref/display')
-                .then(response => response.text())
-                .then(text => {
-                    console.log(text);
-                    document.querySelector("#liquid_pref").innerHTML = text;
-                });
-            };
+                ajax('{% url 'display' %}', 'GET', JSON.stringify({mockup: 0}), res => {
+                liquid_pref = res.response;
+                document.querySelector("#liquid_pref").innerHTML = liquid_pref;
+            });
+            }
 
             document.addEventListener('DOMContentLoaded', function() {
                 document.querySelector("#display").onclick = display;
             } );
-
             </script>
             <style>
                 .flex-container {
                     display: grid;
-                    padding: 20px;
+                    padding: 40px;
                     grid-column-gap: 20px;
                     grid-row-gap: 20px;
                     grid-template-columns: 50% 50%;
@@ -154,54 +150,132 @@
                 .flex-container > div {
                     padding: 10px;
                     text-align: center;
-                    border: dashed 2px #78909C;
                     border-radius: 10px;
                 }
 
-                h1 { color: #ffffff; background-color: royalblue; font-family: 'Raleway',sans-serif; font-size: 30px; font-weight: 800; line-height: 72px; margin: 0 0 24px; text-transform: uppercase; }
-                h2 { color: #ffffff; background-color:goldenrod; font-family: 'Raleway',sans-serif; font-size: 15px; font-weight: 800; line-height: 36px; margin: 0 0 24px; text-align: center; }
-            </style>
+                #form_django {
+                    padding: 10px;
+                    margin: 40px;
+                    border-radius: 10px;
+                    border: dashed 2px black;
+                }
 
+                #form_django  > div{
+                    padding: 10px;
+                    text-align: center;
+                }
+
+                .shares {
+                    border: solid 2px #a056aa;
+                }
+
+                .options {
+                    border: solid 2px #42a7a7;
+                }
+
+                .handsontable {
+                    font-family: sans-serif;
+
+                }
+
+                button {
+                    padding: 20px;
+                    margin: 20px;
+                }
+
+                h1 {
+                    padding: 20px;
+                    margin: 20px;
+                    background-color: rgb(0, 42, 80);
+                    color: white;
+                }
+
+                h2 {
+                    padding: 20px;
+                    margin: 20px;
+                    background-color: rgb(12, 182, 205);
+                }
+
+
+                .table {
+                    padding: 20px;
+                    margin: 20px;                   
+                }
+
+                .table td {
+                    text-align: center;   
+                    }
+
+                .table th {
+                    text-align: center;   
+                    }
+
+                .buttons {
+                    text-align: center;
+                }
+
+                #Omnes {
+                    text-align: center;
+                    padding: 20px;
+                }
+
+                img {
+                    width:400px;
+                    height: auto;
+                }
+            </style>
         <title>Liquid pref</title>
     </head>
     <body>
+
+        <div id="Omnes">
+            <img src="https://www.omnescapital.com/wp-content/uploads/2021/02/omnes.jpg" class="img-fluid" alt="...">
+        </div>
 
         <h1>1. Cap table creation</h1>
 
         <div class="flex-container">
 
-            <div>
+            <div class="shares">
                 <h2>Shares input</h2>
                 <div id="shares_input"></div>
             </div>
-            <div>
+            <div class="options">
                 <h2>Options input</h2>
                 <div id="options_input"></div>
             </div>
 
-            <div>
+            <div class="shares">
                 <h2>Shares Price</h2>
                 <div id="shares_price"></div>
             </div>
-            <div>
+            <div class="options">
                 <h2>Options Price</h2>
                 <div id="options_price"></div>
             </div>
-
-
         </div>        
 
-        <button id="save">Create cap table</button>
+        <div class="buttons">
+            <button id="save" class="btn btn-primary">Display cap table</button>
+            <button id="download_cp" class="btn btn-success">Download cap table</button>
+        </div>
+
         <div id="cap_table"></div>
 
 
         <h1>2. Liquid pref simulation</h1>
-        <form action="{% url 'generate' %}" method="POST">
+        <form action="{% url 'generate' %}" method="POST" id="form_django">
             {{ form }}
-            <input type="submit" value="Save parameters">
+            <div>
+            <input type="submit" value="Save parameters" class="btn btn-warning">
+            </div>
         </form>
 
-        <button id="display">Display</button>
+        <div class="buttons">
+            <button id="display" class="btn btn-primary">Display liquid pref</button>
+            <button id="download_lp" class="btn btn-success">Download liquid pref</button>
+        </div>
+
         <div id="liquid_pref"></div>
 
     </body>
