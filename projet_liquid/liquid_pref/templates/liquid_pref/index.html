@@ -7,6 +7,8 @@
 
             const container_shares = document.getElementById('shares_input');
             const container_options = document.getElementById('options_input');
+            const container_shares_prices = document.getElementById('shares_price');
+            const container_options_prices = document.getElementById('options_price');
             const save = document.querySelector('#save');
 
             const data_shares = [
@@ -27,6 +29,16 @@
             ['Employee 5', 0, 0, 0]
             ];
 
+            const data_shares_prices = [
+            ['', 'Common shares', 'A shares', 'B shares', 'C shares'],
+            ['Share price', 0, 0, 0, 0]
+            ];
+
+            const data_options_prices = [
+            ['', 'Options A', 'Options B', 'Options C'],
+            ['Option price', 0, 0, 0]
+            ];
+
             const hot_shares = new Handsontable(container_shares, {
             data: JSON.parse(JSON.stringify(data_shares)),
             startRows: 5,
@@ -42,6 +54,30 @@
             const hot_options = new Handsontable(container_options, {
             data: JSON.parse(JSON.stringify(data_options)),
             startRows: 5,
+            startCols: 3,
+            height: 'auto',
+            width: 'auto',
+            minSpareRows: 0,
+            minSpareCols: 0,
+            licenseKey: 'non-commercial-and-evaluation',
+            contextMenu: 'true',
+            });
+
+            const hot_shares_price = new Handsontable(container_shares_prices, {
+            data: JSON.parse(JSON.stringify(data_shares_prices)),
+            startRows: 1,
+            startCols: 4,
+            height: 'auto',
+            width: 'auto',
+            minSpareRows: 0,
+            minSpareCols: 0,
+            licenseKey: 'non-commercial-and-evaluation',
+            contextMenu: 'true',
+            });
+
+            const hot_options_price = new Handsontable(container_options_prices, {
+            data: JSON.parse(JSON.stringify(data_options_prices)),
+            startRows: 1,
             startCols: 3,
             height: 'auto',
             width: 'auto',
@@ -81,28 +117,92 @@
                 return obj;
                 }
 
+            var cap_table;
+            var liquid_pref;
+
             Handsontable.dom.addEvent(save, 'click', () => {
             // save all cell's data
-            ajax('{% url 'index' %}', 'POST', JSON.stringify({data_shares: hot_shares.getData(), data_options: hot_options.getData()}), res => {
-                console.log("Copyright HH")
+            ajax('{% url 'index' %}', 'POST', JSON.stringify({data_shares: hot_shares.getData(), data_options: hot_options.getData(), data_shares_prices: hot_shares_price.getData(), data_options_prices: hot_options_price.getData()}), res => {
+                cap_table = res.response;
+                document.querySelector("#cap_table").innerHTML = cap_table;
             });
             });
 
+            function display() {
+                fetch('/liquid_pref/display')
+                .then(response => response.text())
+                .then(text => {
+                    console.log(text);
+                    document.querySelector("#liquid_pref").innerHTML = text;
+                });
+            };
+
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelector("#display").onclick = display;
+            } );
+
             </script>
+            <style>
+                .flex-container {
+                    display: grid;
+                    padding: 20px;
+                    grid-column-gap: 20px;
+                    grid-row-gap: 20px;
+                    grid-template-columns: 50% 50%;
+                }
+
+                .flex-container > div {
+                    padding: 10px;
+                    text-align: center;
+                    border: dashed 2px #78909C;
+                    border-radius: 10px;
+                }
+
+                h1 { color: #ffffff; background-color: royalblue; font-family: 'Raleway',sans-serif; font-size: 30px; font-weight: 800; line-height: 72px; margin: 0 0 24px; text-transform: uppercase; }
+                h2 { color: #ffffff; background-color:goldenrod; font-family: 'Raleway',sans-serif; font-size: 15px; font-weight: 800; line-height: 36px; margin: 0 0 24px; text-align: center; }
+            </style>
 
         <title>Liquid pref</title>
     </head>
     <body>
 
-        <h1>Hello</h1>
+        <h1>1. Cap table creation</h1>
 
-        <div id="shares_input"></div>
-        <div id="options_input"></div>
+        <div class="flex-container">
+
+            <div>
+                <h2>Shares input</h2>
+                <div id="shares_input"></div>
+            </div>
+            <div>
+                <h2>Options input</h2>
+                <div id="options_input"></div>
+            </div>
+
+            <div>
+                <h2>Shares Price</h2>
+                <div id="shares_price"></div>
+            </div>
+            <div>
+                <h2>Options Price</h2>
+                <div id="options_price"></div>
+            </div>
+
+
+        </div>        
+
         <button id="save">Create cap table</button>
+        <div id="cap_table"></div>
 
 
-        <div id="content"></div>
+        <h1>2. Liquid pref simulation</h1>
+        <form action="{% url 'generate' %}" method="POST">
+            {{ form }}
+            <input type="submit" value="Save parameters">
+        </form>
 
+        <button id="display">Display</button>
+        <div id="liquid_pref"></div>
 
     </body>
 </html>
