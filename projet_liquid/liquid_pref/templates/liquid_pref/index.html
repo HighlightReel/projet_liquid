@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <script src="https://cdn.jsdelivr.net/npm/handsontable@9.0/dist/handsontable.full.min.js"></script>
+        <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@9.0/dist/handsontable.full.min.css" /> 
+        <script type="module">
+
+            const container_shares = document.getElementById('shares_input');
+            const container_options = document.getElementById('options_input');
+            const save = document.querySelector('#save');
+
+            const data_shares = [
+            ['', 'Common shares', 'A shares', 'B shares', 'C shares'],
+            ['Investor 1', 0, 0, 0, 0],
+            ['Investor 2', 0, 0, 0, 0],
+            ['Investor 3', 0, 0, 0, 0],
+            ['Investor 4', 0, 0, 0, 0],
+            ['Investor 5', 0, 0, 0, 0]
+            ];
+
+            const data_options = [
+            ['', 'Options A', 'Options B', 'Options C'],
+            ['Employee 1', 0, 0, 0],
+            ['Employee 2', 0, 0, 0],
+            ['Employee 3', 0, 0, 0],
+            ['Employee 4', 0, 0, 0],
+            ['Employee 5', 0, 0, 0]
+            ];
+
+            const hot_shares = new Handsontable(container_shares, {
+            data: JSON.parse(JSON.stringify(data_shares)),
+            startRows: 5,
+            startCols: 4,
+            height: 'auto',
+            width: 'auto',
+            minSpareRows: 0,
+            minSpareCols: 0,
+            licenseKey: 'non-commercial-and-evaluation',
+            contextMenu: 'true',
+            });
+
+            const hot_options = new Handsontable(container_options, {
+            data: JSON.parse(JSON.stringify(data_options)),
+            startRows: 5,
+            startCols: 3,
+            height: 'auto',
+            width: 'auto',
+            minSpareRows: 0,
+            minSpareCols: 0,
+            licenseKey: 'non-commercial-and-evaluation',
+            contextMenu: 'true',
+            });
+
+            function ajax(url, method, params, callback) {
+                let obj;
+
+                try {
+                    obj = new XMLHttpRequest();
+                } catch (e) {
+                    try {
+                    obj = new ActiveXObject('Msxml2.XMLHTTP');
+                    } catch (e) {
+                    try {
+                        obj = new ActiveXObject('Microsoft.XMLHTTP');
+                    } catch (e) {
+                        alert('Your browser does not support Ajax.');
+                        return false;
+                    }
+                    }
+                }
+                obj.onreadystatechange = () => {
+                    if (obj.readyState == 4) {
+                    callback(obj);
+                    }
+                };
+                obj.open(method, url, true);
+                obj.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                obj.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                obj.send(params);
+
+                return obj;
+                }
+
+            Handsontable.dom.addEvent(save, 'click', () => {
+            // save all cell's data
+            ajax('{% url 'index' %}', 'POST', JSON.stringify({data_shares: hot_shares.getData(), data_options: hot_options.getData()}), res => {
+                console.log("Copyright HH")
+            });
+            });
+
+            </script>
+
+        <title>Liquid pref</title>
+    </head>
+    <body>
+
+        <h1>Hello</h1>
+
+        <div id="shares_input"></div>
+        <div id="options_input"></div>
+        <button id="save">Create cap table</button>
+
+
+        <div id="content"></div>
+
+
+    </body>
+</html>
