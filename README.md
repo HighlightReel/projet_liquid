@@ -1,1 +1,3 @@
-# liquid_pref
+# Web application to automate liquid pref generation
+# Used Django for the backend and Javascript for the front
+
