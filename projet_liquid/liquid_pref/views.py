@@ -98,8 +98,8 @@ def index(request):
         cap_table_global = cap_table
         shares_prices_global = list(map(float,shares_prices))
         options_prices_global = list(map(float,options_prices))
-        
-        return HttpResponse(cap_table.to_html(classes='table table-striped'))
+
+        return HttpResponse(cap_table_styled.render().replace("<table ", "<table class='table table-striped' "))
     return render(request, "liquid_pref/index.html", {
         "form": NewForm()
     })
@@ -121,10 +121,11 @@ def generate(request):
             sale_price_global = sale_price
             multiples_pref_global = multiples_pref
 
-        return render(request, "liquid_pref/index.html", {
-        "form": form
-        })
+            message="Saved"
+        
+        return HttpResponse(json.dumps(message))
+
 
 def display(request):
     liquid_pref, liquid_pref_styled = computations.liquid_pref_function(cap_table_global, series_global, investors_global, options_holders_global, options_class_global, first_step_global, Galion_rate_global, multiples_pref_global, participating_global, shares_prices_global, sale_price_global)
-    return HttpResponse(liquid_pref.to_html(classes='table table-striped'))
+    return HttpResponse(liquid_pref_styled.render().replace("<table ", "<table class='table table-striped' "))

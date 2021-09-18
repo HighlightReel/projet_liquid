@@ -2,6 +2,7 @@
 <html lang="en">
     <head>
         <script src="https://cdn.jsdelivr.net/npm/handsontable@9.0/dist/handsontable.full.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@9.0/dist/handsontable.full.min.css" /> 
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
         <script type="module">
@@ -127,6 +128,15 @@
             });
             });
 
+                        
+            $('#form_django').submit(function(e){
+                $.post('{% url 'generate' %}', $(this).serialize(), function(data){ 
+                $('.message').html(data);
+                // of course you can do something more fancy with your respone
+                });
+                e.preventDefault();
+            });
+
             function display() {
                 ajax('{% url 'display' %}', 'GET', JSON.stringify({mockup: 0}), res => {
                 liquid_pref = res.response;
@@ -166,16 +176,23 @@
                 }
 
                 .shares {
-                    border: solid 2px #a056aa;
+                    border: solid 2px rgb(12, 182, 205);
+                }
+
+                .shares > h2 {
+                    background-color: rgb(12, 182, 205);
                 }
 
                 .options {
-                    border: solid 2px #42a7a7;
+                    border: solid 2px rgb(0, 160, 75);
+                }
+
+                .options > h2 {
+                    background-color: rgb(0, 160, 75);
                 }
 
                 .handsontable {
                     font-family: sans-serif;
-
                 }
 
                 button {
@@ -188,12 +205,15 @@
                     margin: 20px;
                     background-color: rgb(0, 42, 80);
                     color: white;
+                    font-size: 20px;
                 }
 
                 h2 {
                     padding: 20px;
                     margin: 20px;
                     background-color: rgb(12, 182, 205);
+                    font-size: 15px;
+                    color: white;
                 }
 
 
@@ -223,6 +243,14 @@
                     width:400px;
                     height: auto;
                 }
+
+                footer {
+                    text-align: center;
+                    font-style: italic;
+                    font-size: 15px;
+                    padding: 20px;
+                }
+
             </style>
         <title>Liquid pref</title>
     </head>
@@ -232,7 +260,7 @@
             <img src="https://www.omnescapital.com/wp-content/uploads/2021/02/omnes.jpg" class="img-fluid" alt="...">
         </div>
 
-        <h1>1. Cap table creation</h1>
+        <h1>1) Cap table</h1>
 
         <div class="flex-container">
 
@@ -263,13 +291,15 @@
         <div id="cap_table"></div>
 
 
-        <h1>2. Liquid pref simulation</h1>
-        <form action="{% url 'generate' %}" method="POST" id="form_django">
+        <h1>2) Liquid pref</h1>
+        <form action="" method="POST" id="form_django">
             {{ form }}
             <div>
             <input type="submit" value="Save parameters" class="btn btn-warning">
             </div>
         </form>
+
+        <div class="message"></div>
 
         <div class="buttons">
             <button id="display" class="btn btn-primary">Display liquid pref</button>
@@ -279,4 +309,7 @@
         <div id="liquid_pref"></div>
 
     </body>
+    <footer>
+        <p>Programmed by Hugo Hubert - 2021</p>
+      </footer> 
 </html>
