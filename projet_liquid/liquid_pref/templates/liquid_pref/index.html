@@ -3,6 +3,7 @@
     <head>
         <script src="https://cdn.jsdelivr.net/npm/handsontable@9.0/dist/handsontable.full.min.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@9.0/dist/handsontable.full.min.css" /> 
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
         <script type="module">
@@ -18,11 +19,11 @@
 
             const data_shares = [
             ['', 'Common shares', 'A shares', 'B shares', 'C shares'],
+            ['Founders', 0, 0, 0, 0],
             ['Investor 1', 0, 0, 0, 0],
             ['Investor 2', 0, 0, 0, 0],
             ['Investor 3', 0, 0, 0, 0],
-            ['Investor 4', 0, 0, 0, 0],
-            ['Investor 5', 0, 0, 0, 0]
+            ['Investor 4', 0, 0, 0, 0]
             ];
 
             const data_options = [
@@ -36,12 +37,12 @@
 
             const data_shares_prices = [
             ['', 'Nominal', 'A shares', 'B shares', 'C shares'],
-            ['Share price', 0, 0, 0, 0]
+            ['Share price (€)', 0, 0, 0, 0]
             ];
 
             const data_options_prices = [
             ['', 'Options A', 'Options B', 'Options C'],
-            ['Option price', 0, 0, 0]
+            ['Option price (€)', 0, 0, 0]
             ];
 
             const hot_shares = new Handsontable(container_shares, {
@@ -131,8 +132,18 @@
                         
             $('#form_django').submit(function(e){
                 $.post('{% url 'generate' %}', $(this).serialize(), function(data){ 
-                $('.message').html(data);
-                // of course you can do something more fancy with your respone
+                    $("#alert_liquid_pref").show().delay(2500).queue(function(n) {
+                        $(this).fadeOut(); n();
+                        });
+                });
+                e.preventDefault();
+            });
+
+            $('#form_plot').submit(function(e){
+                $.post('{% url 'plot_parameters' %}', $(this).serialize(), function(data){ 
+                    $("#alert_graph").show().delay(2500).queue(function(n) {
+                        $(this).fadeOut(); n();
+                        });
                 });
                 e.preventDefault();
             });
@@ -144,9 +155,39 @@
             });
             }
 
+            function hideField() {
+                let check = document.getElementsByName("first_step")[0].value;
+                if (check === "Carve-out") {
+                    $("#id_carve_out_rate").show();
+                    $("label[for='id_carve_out_rate']").show();
+                    }else{
+                    $("#id_carve_out_rate").hide();
+                    $("label[for='id_carve_out_rate']").hide();
+                    }
+                }
+
+            function plot() {
+                ajax('{% url 'plot' %}', 'GET', JSON.stringify({mockup: 0}), res => {
+                liquid_pref_plot = JSON.parse(res.response);
+                Plotly.newPlot('liquid_pref_plot',JSON.parse(liquid_pref_plot).data, JSON.parse(liquid_pref_plot).layout);
+            });
+            }
+
+            function compute_data_table() {
+                ajax('{% url 'data_table' %}', 'GET', JSON.stringify({mockup: 0}), res => {
+                data_table = res.response;
+                document.querySelector("#data_table").innerHTML = data_table;
+            });
+            }
+
+
             document.addEventListener('DOMContentLoaded', function() {
                 document.querySelector("#display").onclick = display;
+                document.querySelector("#id_first_step").onchange = hideField;
+                document.querySelector("#plot").onclick = plot;
+                document.querySelector("#compute_data_table").onclick = compute_data_table;
             } );
+
             </script>
             <style>
                 .flex-container {
@@ -163,14 +204,19 @@
                     border-radius: 10px;
                 }
 
-                #form_django {
+                #form_django, #form_plot {
                     padding: 10px;
                     margin: 40px;
                     border-radius: 10px;
-                    border: dashed 2px black;
+                    border: solid 2px grey;
                 }
 
-                #form_django  > div{
+                #form_django  > div {
+                    padding: 10px;
+                    text-align: center;
+                }
+
+                #form_plot  > div {
                     padding: 10px;
                     text-align: center;
                 }
@@ -205,21 +251,40 @@
                     margin: 20px;
                     background-color: rgb(0, 42, 80);
                     color: white;
-                    font-size: 20px;
+                    font-size: 23px;
                 }
 
                 h2 {
                     padding: 20px;
-                    margin: 20px;
-                    background-color: rgb(12, 182, 205);
-                    font-size: 15px;
+                    margin: 10px;
+                    background-color: grey;
+                    font-size: 18px;
                     color: white;
+                    text-align: center;
+                }
+
+                h3 {
+                    font-size: 15px;
+                    padding: 10px;
+                    margin: 10px;
+                    font-style: normal;
+                    color: rgb(105, 102, 102);
+                    text-align: center;
                 }
 
 
                 .table {
                     padding: 20px;
-                    margin: 20px;                   
+                    margin: 20px;
+                    width: 100%;
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+
+                .table-responsive {
+                    width: 85%;
+                    margin-left: auto;
+                    margin-right: auto;
                 }
 
                 .table td {
@@ -251,8 +316,39 @@
                     padding: 20px;
                 }
 
+                .alert {
+                    display: none;
+                    width:100px; 
+                    margin-bottom: 1px;
+                    height: 30px;
+                    line-height: 30px;
+                    padding:0px 15px;
+                    margin-right: auto;
+                    margin-left: auto;
+                }
+
+                #django_form_element {
+                    padding: 20px;
+                    margin: 20px;
+                }
+
+                #id_carve_out_rate {
+                    display: none;
+                }
+
+                label[for='id_carve_out_rate'] {
+                    display: none;
+                }
+
+                #center_plot {
+                    width: 95%;
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+
+
             </style>
-        <title>Liquid pref</title>
+        <title>Liquid pref application</title>
     </head>
     <body>
 
@@ -260,53 +356,98 @@
             <img src="https://www.omnescapital.com/wp-content/uploads/2021/02/omnes.jpg" class="img-fluid" alt="...">
         </div>
 
-        <h1>1) Cap table</h1>
+        <h1>1 - CAP TABLE </h1>
 
         <div class="flex-container">
 
             <div class="shares">
-                <h2>Shares input</h2>
-                <div id="shares_input"></div>
+                <h2>Shares Input</h2>
+                <h3>Please fill the number of shares per player and per share class</h3>
+                <div id="center_shares_input">
+                    <div id="shares_input"></div>
+                </div>
             </div>
             <div class="options">
-                <h2>Options input</h2>
+                <h2>Options Input</h2>
+                <h3>Please fill the number of options per player and per option class</h3>
                 <div id="options_input"></div>
             </div>
 
             <div class="shares">
                 <h2>Shares Price</h2>
+                <h3>Please fill the price of each share class</h3>
                 <div id="shares_price"></div>
             </div>
             <div class="options">
                 <h2>Options Price</h2>
+                <h3>Please fill the price of each option class</h3>
                 <div id="options_price"></div>
             </div>
         </div>        
 
         <div class="buttons">
             <button id="save" class="btn btn-primary">Display cap table</button>
-            <button id="download_cp" class="btn btn-success">Download cap table</button>
+            <input type="button" class="btn btn-success" value="Download cap table" onclick="window.open('{% url 'download_cap_table' %}')">
         </div>
 
-        <div id="cap_table"></div>
+        <div id="cap_table" class="table-responsive"></div>
 
 
-        <h1>2) Liquid pref</h1>
+        <h1>2 - LIQUID PREF </h1>
+
         <form action="" method="POST" id="form_django">
-            {{ form }}
+            <h2>Liquid pref parameters</h2>
+            <div id = "django_form_element">
+                {{ form }}
+            </div>
             <div>
-            <input type="submit" value="Save parameters" class="btn btn-warning">
+                <input type="submit" value="Save parameters" class="btn btn-warning">
             </div>
         </form>
 
-        <div class="message"></div>
+        <div class="alert alert-success text-center" role="alert" id="alert_liquid_pref">
+            <strong>Saved!</strong> 
+        </div>
+ 
+
+
 
         <div class="buttons">
             <button id="display" class="btn btn-primary">Display liquid pref</button>
-            <button id="download_lp" class="btn btn-success">Download liquid pref</button>
+            <input type="button" class="btn btn-success" value="Download liquid pref" onclick="window.open('{% url 'download_liquid_pref' %}')">
         </div>
 
-        <div id="liquid_pref"></div>
+        <div id="liquid_pref" class="table-responsive"></div>
+
+
+        <h1>3 - GRAPH & DATA TABLE </h1>
+
+        <form action="" method="POST" id="form_plot">
+            <h2>Graph and data table parameters</h2>
+            <h3>Sale price (€)</h3>
+            <div id = "django_form_element">
+                {{ form_plot }}
+            </div>
+            <div>
+                <input type="submit" value="Save parameters" class="btn btn-warning">
+            </div>
+        </form>
+
+        <div class="alert alert-success text-center" role="alert" id="alert_graph">
+            <strong>Saved!</strong> 
+        </div>
+
+        <div class="buttons">
+            <button id="plot" class="btn btn-danger">Plot liquid pref</button>
+            <button id="compute_data_table" class="btn btn-primary">Display data table</button>
+            <input type="button" class="btn btn-success" value="Download data table" onclick="window.open('{% url 'download_data_table' %}')">
+        </div>
+
+        <div id="center_plot">
+            <div id="liquid_pref_plot"></div>
+        </div>
+
+        <div id="data_table" class="table-responsive"></div>
 
     </body>
     <footer>
