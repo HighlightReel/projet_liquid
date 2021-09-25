@@ -15,10 +15,6 @@ import xlsxwriter
 import pandas as pd
 from io import BytesIO as IO
 
-
-
-
-
 investors_global = []
 series_global = [] 
 shares_global = [] 
