@@ -48,8 +48,10 @@ def cap_table_function(investors, series, shares, options_holders, options_class
     return (cap_table, cap_table.style.format(format_dict))
 
 
-def liquid_pref_function(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, sale_price):
+def liquid_pref_function(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, sale_price, options_prices, options, iteration, shares):
     
+    init_sale_price = sale_price
+
     first_step_item = first_step + (first_step == "Carve-out")*(": " + str(carve_out_rate) + "%")
         
     liquid_pref_steps = [first_step_item]
@@ -66,6 +68,12 @@ def liquid_pref_function(cap_table, series, investors, options_holders, options_
     solde = []
     price_step_list = []
 
+    #Add cash from options
+    options_cash = 0
+    for i in range (len(options_prices)):
+        for j in range (len(options)):
+            options_cash = options_cash + options_prices[i] * options[j][i]
+    sale_price = sale_price + options_cash
 
     #First step
     if (first_step == "Nominal"):
@@ -76,8 +84,6 @@ def liquid_pref_function(cap_table, series, investors, options_holders, options_
         price_step = carve_out_rate/100 * sale_price / cap_table.at["Total", "Total FD"]
         price_step_list.append(price_step)
         liquid_pref[liquid_pref_steps[0]] = cap_table["Total FD"] * price_step
-    else:
-        print("ERROR FIRST STEP")
     solde.append(sale_price - liquid_pref.at["Total", liquid_pref_steps[0]])
 
 
@@ -124,12 +130,11 @@ def liquid_pref_function(cap_table, series, investors, options_holders, options_
 
     #Grand total
     liquid_pref.loc["Total","Total proceeds"] = liquid_pref.loc["Total",].sum()
-
+        
     #solde + price_step
     for i in range (len(liquid_pref_steps)):
         liquid_pref.loc["Solde", liquid_pref_steps[i]] = solde[i]
         liquid_pref.loc["Prix", liquid_pref_steps[i]] = price_step_list[i] 
-
 
     # vs prorata / delta
     for i in range (len(index_list)):
@@ -138,23 +143,31 @@ def liquid_pref_function(cap_table, series, investors, options_holders, options_
     liquid_pref.loc["Total", "vs prorata"] = cap_table.at["Total", "Total FD (%)"] * sale_price
     liquid_pref.loc["Total", "% delta"] = liquid_pref.at["Total", "Total proceeds"] / liquid_pref.at["Total", "vs prorata"] - 1
 
-
     #format
     format_dict = { i : '{:,.2f} €'.format for i in list(liquid_pref.columns)}
     format_dict["% delta"] = '{:,.2%}'.format
     liquid_pref.style.format(format_dict)
 
-    return (liquid_pref, liquid_pref.style.format(format_dict))
+    #Check if options exercised
+    ordinary_pps = liquid_pref.loc[investors[0],"Total proceeds"] / cap_table.loc[investors[0],"Total FD"]
+    if (iteration < len(options_prices)):
+        if ((ordinary_pps < options_prices[-1-iteration])):
+            new_options = [[0 if index==(len(options_prices)-1-iteration) else j for index, j in enumerate(k)] for k in options]
+            new_cap_table, new_cap_styled = cap_table_function(investors, series, shares, options_holders, options_class, new_options)
+            return (liquid_pref_function(new_cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, init_sale_price, options_prices, new_options, iteration+1, shares))
+        else:
+            return(liquid_pref, liquid_pref.style.format(format_dict), iteration)
+    else:
+            return(liquid_pref, liquid_pref.style.format(format_dict), iteration)
 
-def plot_liquid_pref(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, floor, ceiling, step):
+def plot_liquid_pref(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, options_prices, options, floor, ceiling, step, shares):
     graphe = []
     x = []
     for i in range(floor, ceiling+step, step):
         x.append(i)
 
-
     for sale_price in range (floor, ceiling+step, step):
-        liquid_pref, liquid_pref_styled = liquid_pref_function(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, sale_price)
+        liquid_pref, liquid_pref_styled, iteration = liquid_pref_function(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, sale_price, options_prices, options, 0, shares)
         proceeds = []
         for investor in (investors+options_holders):
             proceeds.append(liquid_pref["Total proceeds"][investor])
@@ -174,11 +187,11 @@ def plot_liquid_pref(cap_table, series, investors, options_holders, options_clas
 
     return(liquidGraph)
 
-def compute_data_table(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, floor, ceiling, step):
+def compute_data_table(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, options_prices, options, floor, ceiling, step, shares):
     graphe = []
 
     for sale_price in range (floor, ceiling+step, step):
-        liquid_pref, liquid_pref_styled = liquid_pref_function(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, sale_price)
+        liquid_pref, liquid_pref_styled, iteration = liquid_pref_function(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, sale_price, options_prices, options, 0, shares)
         proceeds = []
         for investor in (investors+options_holders+["Total"]):
             proceeds.append(liquid_pref["Total proceeds"][investor])

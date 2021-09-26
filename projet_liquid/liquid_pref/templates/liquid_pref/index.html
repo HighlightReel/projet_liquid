@@ -18,6 +18,7 @@
             var liquid_pref;
             var liquid_pref_plot;
             var data_table;
+            var ans;
 
             const data_shares = [
             ['', 'Common shares', 'A shares', 'B shares', 'C shares'],
@@ -134,7 +135,7 @@
                         
             $('#form_django').submit(function(e){
                 $.post('{% url 'generate' %}', $(this).serialize(), function(data){ 
-                    $("#alert_liquid_pref").show().delay(2500).queue(function(n) {
+                    $("#alert_liquid_pref").show().delay(2000).queue(function(n) {
                         $(this).fadeOut(); n();
                         });
                 });
@@ -143,7 +144,7 @@
 
             $('#form_plot').submit(function(e){
                 $.post('{% url 'plot_parameters' %}', $(this).serialize(), function(data){ 
-                    $("#alert_graph").show().delay(2500).queue(function(n) {
+                    $("#alert_graph").show().delay(2000).queue(function(n) {
                         $(this).fadeOut(); n();
                         });
                 });
@@ -152,7 +153,13 @@
 
             function display() {
                 ajax('{% url 'display' %}', 'GET', JSON.stringify({mockup: 0}), res => {
-                liquid_pref = res.response;
+                ans = JSON.parse(res.response)
+                if (ans["iteration"] > 0) {
+                    $("#alert_options").show();
+                } else {
+                    $("#alert_options").hide();
+                }
+                liquid_pref = ans["liquid_pref"];
                 document.querySelector("#liquid_pref").innerHTML = liquid_pref;
             });
             }
@@ -329,6 +336,10 @@
                     margin-left: auto;
                 }
 
+                #alert_options {
+                    width: 400px;
+                }
+
                 #django_form_element {
                     padding: 20px;
                     margin: 20px;
@@ -382,7 +393,7 @@
             </div>
             <div class="options">
                 <h2>Options Price</h2>
-                <h3>Please fill the price of each option class</h3>
+                <h3>Please fill the strike price of each option class</h3>
                 <div id="options_price"></div>
             </div>
         </div>        
@@ -419,6 +430,10 @@
             <input type="button" class="btn btn-success" value="Download liquid pref" onclick="window.open('{% url 'download_liquid_pref' %}')">
         </div>
 
+        <div class="alert alert-warning text-center" role="alert" id="alert_options">
+            <strong>Some options were not exercised </strong> 
+        </div>
+
         <div id="liquid_pref" class="table-responsive"></div>
 
 
@@ -426,7 +441,7 @@
 
         <form action="" method="POST" id="form_plot">
             <h2>Graph and data table parameters</h2>
-            <h3>Sale price (€)</h3>
+            <h3>Equity value (€)</h3>
             <div id = "django_form_element">
                 {{ form_plot }}
             </div>

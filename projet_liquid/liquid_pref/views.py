@@ -15,28 +15,6 @@ import xlsxwriter
 import pandas as pd
 from io import BytesIO as IO
 
-investors_global = []
-series_global = [] 
-shares_global = [] 
-options_holders_global = [] 
-options_class_global = [] 
-options_global = []
-cap_table_global = []
-liquid_pref_global = []
-shares_prices_global = []
-options_prices_global = []
-
-first_step_global = "Nominal"
-carve_out_rate_global = 20
-participating_global = True
-sale_price_global = 100000000
-multiples_pref_global = [1,1,1]
-
-floor_global = 10000000
-ceiling_global = 200000000
-step_global = 1000000
-data_table_global = []
-
 class NewForm(forms.Form):
     first_step = forms.ChoiceField(choices=(
     ("Nominal", "Nominal"),
@@ -47,7 +25,7 @@ class NewForm(forms.Form):
     (True, "Yes"),
     (False, "No"),
     ))
-    sale_price = forms.FloatField(label="Sale price (€)", initial=100000000, widget=forms.NumberInput(attrs={'style': 'width:150px'}))
+    sale_price = forms.FloatField(label="Equity value (€)", initial=100000000, widget=forms.NumberInput(attrs={'style': 'width:150px'}))
     multiples_pref = SimpleArrayField(forms.CharField(max_length=100), initial=[1,1,1])
 
 class NewFormPlot(forms.Form):
@@ -97,20 +75,42 @@ def cap_table_post_traitement(request):
 
 # Create your views here.
 def index(request):
+    if request.method == "GET":
+        request.session['investors_global'] = []
+        request.session['series_global'] = []
+        request.session['shares_global'] = []
+        request.session['options_holders_global'] = []
+        request.session['options_class_global'] = []
+        request.session['options_global'] = []
+        request.session['cap_table_global'] = []
+        request.session['liquid_pref_global'] = []
+        request.session['shares_prices_global'] = []
+        request.session['options_prices_global'] = []
+
+        request.session['first_step_global'] = "Nominal"
+        request.session['carve_out_rate_global'] = 20
+        request.session['participating_global'] = True
+        request.session['sale_price_global'] = 100000000
+        request.session['multiples_pref_global'] = [1,1,1]
+
+        request.session['floor_global'] = 10000000
+        request.session['ceiling_global'] = 200000000
+        request.session['step_global'] = 1000000
+        request.session['data_table_global'] = []
+
     if request.method == "POST":
         investors, series, shares, options_holders, options_class, options, shares_prices, options_prices = cap_table_post_traitement(request)
         cap_table, cap_table_styled = computations.cap_table_function(investors, series, shares, options_holders, options_class, options)
 
-        global investors_global, series_global, shares_global, options_holders_global, options_class_global, options_global, cap_table_global, shares_prices_global, options_prices_global
-        investors_global = investors
-        series_global = series 
-        shares_global = shares
-        options_holders_global = options_holders
-        options_class_global = options_class
-        options_global = options
-        cap_table_global = cap_table
-        shares_prices_global = list(map(float,shares_prices))
-        options_prices_global = list(map(float,options_prices))
+        request.session['investors_global'] = investors
+        request.session['series_global'] = series 
+        request.session['shares_global'] = shares
+        request.session['options_holders_global'] = options_holders
+        request.session['options_class_global'] = options_class
+        request.session['options_global'] = options
+        request.session['cap_table_global'] = cap_table.to_json()
+        request.session['shares_prices_global'] = list(map(float,shares_prices))
+        request.session['options_prices_global'] = list(map(float,options_prices))
 
         return HttpResponse(cap_table_styled.render().replace("<table ", "<table class='table table-hover table-striped' "))
     return render(request, "liquid_pref/index.html", {
@@ -128,13 +128,11 @@ def generate(request):
             sale_price = form.cleaned_data["sale_price"]
             multiples_pref = list(map(int,form.cleaned_data["multiples_pref"]))
 
-
-            global first_step_global, carve_out_rate_global, participating_global, sale_price_global, multiples_pref_global
-            first_step_global = first_step
-            carve_out_rate_global = carve_out_rate
-            participating_global = participating
-            sale_price_global = sale_price
-            multiples_pref_global = multiples_pref
+            request.session['first_step_global'] = first_step
+            request.session['carve_out_rate_global'] = carve_out_rate
+            request.session['participating_global'] = participating
+            request.session['sale_price_global'] = sale_price
+            request.session['multiples_pref_global'] = multiples_pref
 
             message="Saved"
         
@@ -148,10 +146,9 @@ def plot_parameters(request):
             ceiling = form.cleaned_data["ceiling"]
             step = form.cleaned_data["step"]
 
-            global floor_global, ceiling_global, step_global
-            floor_global = floor
-            ceiling_global = ceiling
-            step_global = step
+            request.session['floor_global'] = floor
+            request.session['ceiling_global']  = ceiling
+            request.session['step_global']  = step
 
             message="Saved"
 
@@ -159,30 +156,28 @@ def plot_parameters(request):
 
 
 def display(request):
-    liquid_pref, liquid_pref_styled = computations.liquid_pref_function(cap_table_global, series_global, investors_global, options_holders_global, options_class_global, first_step_global, carve_out_rate_global, multiples_pref_global, participating_global, shares_prices_global, sale_price_global)
-    global liquid_pref_global
-    liquid_pref_global = liquid_pref
-    return HttpResponse(liquid_pref_styled.render().replace("<table ", "<table class='table table-hover table-striped' "))
+    liquid_pref, liquid_pref_styled, iteration = computations.liquid_pref_function(pd.read_json(request.session['cap_table_global']), request.session['series_global'], request.session['investors_global'], request.session['options_holders_global'], request.session['options_class_global'], request.session['first_step_global'], request.session['carve_out_rate_global'], request.session['multiples_pref_global'], request.session['participating_global'], request.session['shares_prices_global'], request.session['sale_price_global'], request.session['options_prices_global'], request.session['options_global'], 0, request.session['shares_global'])
+    request.session['liquid_pref_global'] = liquid_pref.to_json()
+    return JsonResponse({"liquid_pref": liquid_pref_styled.render().replace("<table ", "<table class='table table-hover table-striped' "), "iteration": iteration})
 
 def plot_graph(request):
-    plot_div = computations.plot_liquid_pref(cap_table_global, series_global, investors_global, options_holders_global, options_class_global, first_step_global, carve_out_rate_global, multiples_pref_global, participating_global, shares_prices_global, floor_global, ceiling_global, step_global)
+    plot_div = computations.plot_liquid_pref(pd.read_json(request.session['cap_table_global']), request.session['series_global'], request.session['investors_global'], request.session['options_holders_global'], request.session['options_class_global'], request.session['first_step_global'], request.session['carve_out_rate_global'], request.session['multiples_pref_global'], request.session['participating_global'], request.session['shares_prices_global'], request.session['options_prices_global'], request.session['options_global'], request.session['floor_global'], request.session['ceiling_global'], request.session['step_global'], request.session['shares_global'])
     return JsonResponse(plot_div, safe=False)
 
 def data_table(request):
-    df, df_styled = computations.compute_data_table(cap_table_global, series_global, investors_global, options_holders_global, options_class_global, first_step_global, carve_out_rate_global, multiples_pref_global, participating_global, shares_prices_global, floor_global, ceiling_global, step_global)
-    global data_table_global
-    data_table_global = df
+    df, df_styled = computations.compute_data_table(pd.read_json(request.session['cap_table_global']), request.session['series_global'], request.session['investors_global'], request.session['options_holders_global'], request.session['options_class_global'], request.session['first_step_global'], request.session['carve_out_rate_global'], request.session['multiples_pref_global'], request.session['participating_global'], request.session['shares_prices_global'], request.session['options_prices_global'], request.session['options_global'], request.session['floor_global'], request.session['ceiling_global'], request.session['step_global'], request.session['shares_global'])
+    request.session['data_table_global'] = df.to_json()
     return HttpResponse(df_styled.render().replace("<table ", "<table class='table table-hover table-striped' "))
 
 def download_cap_table(request):
     excel_file = IO()
     xlwriter = pd.ExcelWriter(excel_file, engine='xlsxwriter')
-    cap_table_global.to_excel(xlwriter, 'cap_table')
+    pd.read_json(request.session['cap_table_global']).to_excel(xlwriter, 'cap_table')
     workbook  = xlwriter.book
     worksheet = xlwriter.sheets['cap_table']
     format = workbook.add_format({'num_format': '0.00%'})
-    worksheet.set_column(len(series_global)+2, len(series_global)+2, None, format)
-    worksheet.set_column(len(series_global+options_class_global)+4, len(series_global+options_class_global)+4, None, format)
+    worksheet.set_column(len(request.session['series_global'])+2, len(request.session['series_global'])+2, None, format)
+    worksheet.set_column(len(request.session['series_global']+request.session['options_class_global'])+4, len(request.session['series_global']+request.session['options_class_global'])+4, None, format)
     xlwriter.save()
     xlwriter.close()
     excel_file.seek(0)
@@ -193,11 +188,11 @@ def download_cap_table(request):
 def download_liquid_pref(request):
     excel_file = IO()
     xlwriter = pd.ExcelWriter(excel_file, engine='xlsxwriter')
-    liquid_pref_global.to_excel(xlwriter, 'liquid_pref')
+    pd.read_json(request.session['liquid_pref_global']).to_excel(xlwriter, 'liquid_pref')
     workbook  = xlwriter.book
     worksheet = xlwriter.sheets['liquid_pref']
     format = workbook.add_format({'num_format': '0.00%'})
-    worksheet.set_column(len(multiples_pref_global)+(not participating_global)*len(multiples_pref_global) + 5, len(multiples_pref_global)+(not participating_global)*len(multiples_pref_global) + 5, None, format)
+    worksheet.set_column(len(request.session['multiples_pref_global'])+(not request.session['participating_global'])*len(request.session['multiples_pref_global']) + 5, len(request.session['multiples_pref_global'])+(not request.session['participating_global'])*len(request.session['multiples_pref_global']) + 5, None, format)
     xlwriter.save()
     xlwriter.close()
     excel_file.seek(0)
@@ -208,7 +203,7 @@ def download_liquid_pref(request):
 def download_data_table(request):
     excel_file = IO()
     xlwriter = pd.ExcelWriter(excel_file, engine='xlsxwriter')
-    data_table_global.to_excel(xlwriter, 'data_table')
+    pd.read_json(request.session['data_table_global']).to_excel(xlwriter, 'data_table')
     workbook  = xlwriter.book
     worksheet = xlwriter.sheets['data_table']
     #format = workbook.add_format({'num_format': '0.00%'})
