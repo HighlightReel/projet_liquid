@@ -155,9 +155,11 @@
                 ajax('{% url 'display' %}', 'GET', JSON.stringify({mockup: 0}), res => {
                 ans = JSON.parse(res.response)
                 if (ans["iteration"] > 0) {
-                    $("#alert_options").show();
+                    $("#alert_options_success").hide();
+                    $("#alert_options_warning").show();
                 } else {
-                    $("#alert_options").hide();
+                    $("#alert_options_warning").hide();
+                    $("#alert_options_success").show();
                 }
                 liquid_pref = ans["liquid_pref"];
                 document.querySelector("#liquid_pref").innerHTML = liquid_pref;
@@ -205,6 +207,9 @@
                     grid-column-gap: 20px;
                     grid-row-gap: 20px;
                     grid-template-columns: 50% 50%;
+                    padding-top: 10px;
+                    padding-bottom: 10px;
+                    justify-content: center;
                 }
 
                 .flex-container > div {
@@ -218,6 +223,8 @@
                     margin: 40px;
                     border-radius: 10px;
                     border: solid 2px grey;
+                    margin-bottom: 15px;
+                    margin-top: 25px;
                 }
 
                 #form_django  > div {
@@ -230,12 +237,29 @@
                     text-align: center;
                 }
 
+                #django_form_element > input {  
+                    margin-right: 10px;
+                }
+
+                #django_form_element > select {  
+                    margin-right: 10px;
+                }
+
+                #django_form_element > #id_multiples_pref {
+                    margin-right: 0px;
+                }
+
+                #django_form_element > #id_step {
+                    margin-right: 0px;
+                }
+
                 .shares {
                     border: solid 2px rgb(12, 182, 205);
                 }
 
                 .shares > h2 {
                     background-color: rgb(12, 182, 205);
+                    border-radius: 10px;
                 }
 
                 .options {
@@ -244,6 +268,7 @@
 
                 .options > h2 {
                     background-color: rgb(0, 160, 75);
+                    border-radius: 10px;
                 }
 
                 .handsontable {
@@ -261,6 +286,7 @@
                     background-color: rgb(0, 42, 80);
                     color: white;
                     font-size: 23px;
+                    border-radius: 10px;
                 }
 
                 h2 {
@@ -270,6 +296,7 @@
                     font-size: 18px;
                     color: white;
                     text-align: center;
+                    border-radius: 10px;
                 }
 
                 h3 {
@@ -279,6 +306,7 @@
                     font-style: normal;
                     color: rgb(105, 102, 102);
                     text-align: center;
+                    padding-top: 5px;
                 }
 
 
@@ -288,6 +316,7 @@
                     width: 100%;
                     margin-left: auto;
                     margin-right: auto;
+                    margin-top: 0px;
                 }
 
                 .table-responsive {
@@ -308,6 +337,7 @@
                     text-align: center;
                 }
 
+
                 #Omnes {
                     text-align: center;
                     padding: 20px;
@@ -323,6 +353,7 @@
                     font-style: italic;
                     font-size: 15px;
                     padding: 20px;
+                    color: grey;
                 }
 
                 .alert {
@@ -336,13 +367,15 @@
                     margin-left: auto;
                 }
 
-                #alert_options {
+                #alert_options_success, #alert_options_warning {
                     width: 400px;
                 }
 
                 #django_form_element {
                     padding: 20px;
                     margin: 20px;
+                    margin-bottom: 5px;
+                    margin-top: 10px;
                 }
 
                 #id_carve_out_rate {
@@ -359,6 +392,49 @@
                     margin-right: auto;
                 }
 
+                caption { 
+                    caption-side:top; 
+                    text-align: center;
+                    font-size: 17px;
+                }
+
+                #equity {
+                    padding-bottom: 0px;
+                    margin-bottom: 0px;
+                }
+
+                #buttons_graph > button {
+                    margin-right: 20px;
+                    margin-left: 0px;
+                    width: 180px;
+                }
+
+                #buttons_graph > input {
+                    margin: 0px;
+                    width: 180px
+                }
+
+                #buttons_cap > button {
+                    margin-right: 20px;
+                    margin-left: 0px;
+                    width: 180px;
+                }
+
+                #buttons_cap > input {
+                    margin: 0px;
+                    width: 180px
+                }
+
+                #buttons_liquid > button {
+                    margin-right: 20px;
+                    margin-left: 0px;
+                    width: 180px;
+                }
+
+                #buttons_liquid > input {
+                    margin: 0px;
+                    width: 180px
+                }
 
             </style>
         <title>Liquid pref application</title>
@@ -375,30 +451,30 @@
 
             <div class="shares">
                 <h2>Shares Input</h2>
-                <h3>Please fill the number of shares per player and per share class</h3>
+                <h3>Please enter the number of shares per player and per share class</h3>
                 <div id="center_shares_input">
                     <div id="shares_input"></div>
                 </div>
             </div>
             <div class="options">
                 <h2>Options Input</h2>
-                <h3>Please fill the number of options per player and per option class</h3>
+                <h3>Please enter the number of options per player and per option class</h3>
                 <div id="options_input"></div>
             </div>
 
             <div class="shares">
                 <h2>Shares Price</h2>
-                <h3>Please fill the price of each share class</h3>
+                <h3>Please enter the price of each share class</h3>
                 <div id="shares_price"></div>
             </div>
             <div class="options">
                 <h2>Options Price</h2>
-                <h3>Please fill the strike price of each option class</h3>
+                <h3>Please enter the strike price of each option class</h3>
                 <div id="options_price"></div>
             </div>
         </div>        
 
-        <div class="buttons">
+        <div class="buttons" id = "buttons_cap">
             <button id="save" class="btn btn-primary">Display cap table</button>
             <input type="button" class="btn btn-success" value="Download cap table" onclick="window.open('{% url 'download_cap_table' %}')">
         </div>
@@ -425,12 +501,16 @@
 
 
 
-        <div class="buttons">
+        <div class="buttons" id="buttons_liquid">
             <button id="display" class="btn btn-primary">Display liquid pref</button>
             <input type="button" class="btn btn-success" value="Download liquid pref" onclick="window.open('{% url 'download_liquid_pref' %}')">
         </div>
 
-        <div class="alert alert-warning text-center" role="alert" id="alert_options">
+        <div class="alert alert-info text-center" role="alert" id="alert_options_success">
+            <strong>All options were exercised</strong> 
+        </div>
+
+        <div class="alert alert-warning text-center" role="alert" id="alert_options_warning">
             <strong>Some options were not exercised </strong> 
         </div>
 
@@ -441,7 +521,7 @@
 
         <form action="" method="POST" id="form_plot">
             <h2>Graph and data table parameters</h2>
-            <h3>Equity value (€)</h3>
+            <h3 id="equity">Equity value (€)</h3>
             <div id = "django_form_element">
                 {{ form_plot }}
             </div>
@@ -454,7 +534,7 @@
             <strong>Saved!</strong> 
         </div>
 
-        <div class="buttons">
+        <div class="buttons" id="buttons_graph">
             <button id="plot" class="btn btn-danger">Plot liquid pref</button>
             <button id="compute_data_table" class="btn btn-primary">Display data table</button>
             <input type="button" class="btn btn-success" value="Download data table" onclick="window.open('{% url 'download_data_table' %}')">

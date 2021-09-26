@@ -26,11 +26,11 @@ class NewForm(forms.Form):
     (False, "No"),
     ))
     sale_price = forms.FloatField(label="Equity value (€)", initial=100000000, widget=forms.NumberInput(attrs={'style': 'width:150px'}))
-    multiples_pref = SimpleArrayField(forms.CharField(max_length=100), initial=[1,1,1])
+    multiples_pref = SimpleArrayField(forms.CharField(max_length=100), initial=[1,1,1], widget=forms.TextInput(attrs={'style': 'width:80px'}))
 
 class NewFormPlot(forms.Form):
     floor = forms.IntegerField(label="Minimum", initial=10000000, widget=forms.NumberInput(attrs={'style': 'width:150px'}))
-    ceiling = forms.IntegerField(label="Maximum", initial=200000000, widget=forms.NumberInput(attrs={'style': 'width:150px'}))
+    ceiling = forms.IntegerField(label="Maximum", initial=100000000, widget=forms.NumberInput(attrs={'style': 'width:150px'}))
     step = forms.IntegerField(label="Step", initial=1000000, widget=forms.NumberInput(attrs={'style': 'width:150px'}))
 
 def cap_table_post_traitement(request):

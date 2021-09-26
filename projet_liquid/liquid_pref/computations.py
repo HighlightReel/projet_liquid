@@ -6,6 +6,12 @@ import plotly.graph_objects as go
 import plotly
 import json
 
+def bold_text(val):
+    return 'font-weight: bold'
+
+def italic_text(val):
+    return 'font-style: italic; font-size: 15px;'
+
 def cap_table_function(investors, series, shares, options_holders, options_class, options):
     
     #cap table init
@@ -44,8 +50,12 @@ def cap_table_function(investors, series, shares, options_holders, options_class
     format_dict = { i : '{:,.0f}'.format for i in list(cap_table.columns) }
     format_dict["Total NFD (%)"] = '{:,.2%}'.format
     format_dict["Total FD (%)"] = '{:,.2%}'.format
-
-    return (cap_table, cap_table.style.format(format_dict))
+  
+    return (cap_table, (cap_table.style
+    .format(format_dict)
+    .set_caption("Cap table")
+    .applymap(bold_text,
+                  subset=pd.IndexSlice[cap_table.index[cap_table.index=='Total'], :])))
 
 
 def liquid_pref_function(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, sale_price, options_prices, options, iteration, shares):
@@ -133,8 +143,8 @@ def liquid_pref_function(cap_table, series, investors, options_holders, options_
         
     #solde + price_step
     for i in range (len(liquid_pref_steps)):
-        liquid_pref.loc["Solde", liquid_pref_steps[i]] = solde[i]
-        liquid_pref.loc["Prix", liquid_pref_steps[i]] = price_step_list[i] 
+        liquid_pref.loc["Balance", liquid_pref_steps[i]] = solde[i]
+        liquid_pref.loc["Price", liquid_pref_steps[i]] = price_step_list[i] 
 
     # vs prorata / delta
     for i in range (len(index_list)):
@@ -156,9 +166,27 @@ def liquid_pref_function(cap_table, series, investors, options_holders, options_
             new_cap_table, new_cap_styled = cap_table_function(investors, series, shares, options_holders, options_class, new_options)
             return (liquid_pref_function(new_cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, init_sale_price, options_prices, new_options, iteration+1, shares))
         else:
-            return(liquid_pref, liquid_pref.style.format(format_dict), iteration)
+            return(liquid_pref, (liquid_pref.style
+            .format(format_dict)
+            .set_caption("Waterfall")
+            .applymap(bold_text,
+                  subset=pd.IndexSlice[liquid_pref.index[liquid_pref.index=='Total'], :]))
+            .applymap(italic_text,
+                  subset=pd.IndexSlice[liquid_pref.index[liquid_pref.index=='Balance'], :])
+            .applymap(italic_text,
+                  subset=pd.IndexSlice[liquid_pref.index[liquid_pref.index=='Price'], :])
+            , iteration)
     else:
-            return(liquid_pref, liquid_pref.style.format(format_dict), iteration)
+            return(liquid_pref, (liquid_pref.style
+            .format(format_dict)
+            .set_caption("Waterfall")
+            .applymap(bold_text,
+                  subset=pd.IndexSlice[liquid_pref.index[liquid_pref.index=='Total'], :]))
+            .applymap(italic_text,
+                  subset=pd.IndexSlice[liquid_pref.index[liquid_pref.index=='Balance'], :])
+            .applymap(italic_text,
+                  subset=pd.IndexSlice[liquid_pref.index[liquid_pref.index=='Price'], :])
+            , iteration)
 
 def plot_liquid_pref(cap_table, series, investors, options_holders, options_class, first_step, carve_out_rate, multiples_pref, participating, shares_prices, options_prices, options, floor, ceiling, step, shares):
     graphe = []
@@ -180,7 +208,7 @@ def plot_liquid_pref(cap_table, series, investors, options_holders, options_clas
                         name=(investors+options_holders)[i]))
 
     fig.update_layout(title='<b>Liquid pref simulation</b>', title_x=0.5,
-                    xaxis_title='Sale price (€)',
+                    xaxis_title='Equity value (€)',
                     yaxis_title='Proceeds (€)')
 
     liquidGraph = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -205,4 +233,8 @@ def compute_data_table(cap_table, series, investors, options_holders, options_cl
     df.columns = [f'{cur:,} €' for cur in df.columns]
     format_dict = { i : '{:,.2f} €'.format for i in list(df.columns)}
     
-    return(df, df.style.format(format_dict))
+    return(df, (df.style
+    .format(format_dict)
+    .set_caption("Waterfall sensitivity")
+    .applymap(bold_text,
+                  subset=pd.IndexSlice[df.index[df.index=='Total'], :])))
